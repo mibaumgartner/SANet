@@ -442,9 +442,17 @@ def evaluateCAD(seriesUIDs, results_filename, outputDir, allNodules, CADSystemNa
     
 def getNodule(annotation, header, state = ""):
     nodule = NoduleFinding()
-    nodule.coordX = annotation[header.index(coordX_label)]
-    nodule.coordY = annotation[header.index(coordY_label)]
-    nodule.coordZ = annotation[header.index(coordZ_label)]
+    if coordX_label in header:
+        nodule.coordX = annotation[header.index(coordX_label)]
+        nodule.coordY = annotation[header.index(coordY_label)]
+        nodule.coordZ = annotation[header.index(coordZ_label)]
+    elif xmin_label in header:
+        nodule.coordX = str((float(nodule.xmin) + float(nodule.xmax)) / 2)
+        nodule.coordY = str((float(nodule.ymin) + float(nodule.ymax)) / 2)
+        nodule.coordZ = str((float(nodule.zmin) + float(nodule.zmax)) / 2)
+    else:
+        print('Error: could not find coordinate labels in header')
+        raise Exception
 
     if xmin_label in header:
         nodule.xmin = annotation[header.index(xmin_label)]
@@ -453,7 +461,6 @@ def getNodule(annotation, header, state = ""):
         nodule.ymax = annotation[header.index(ymax_label)]
         nodule.zmin = annotation[header.index(zmin_label)]
         nodule.zmax = annotation[header.index(zmax_label)]
-
     
     if diameter_mm_label in header:
         nodule.diameter_mm = annotation[header.index(diameter_mm_label)]
@@ -531,10 +538,14 @@ def noduleCADEvaluation(annotations_filename,results_filename,valpath,outputDir)
 
 
 if __name__ == '__main__':
-    annotations_filename = '/home/mj/dataset/nodule_data/data/nodule_process/process_zoom_validate/label_3d.csv'
-    val_path = '/home/mj/dataset/nodule_data/data/nodule_process/process_zoom_validate/val.txt'
-
-    results_filename = '../results/validate1/res/51/FROC/submission_rpn.csv'#3D Faster R-CNN - Res18.csv' #top5.csv'#
-    noduleCADEvaluation(annotations_filename,
-                        results_filename, val_path, os.path.join('../results/validate1/res/51/FROC', 'rpn'))
+    annotations_filename          = sys.argv[1]  # '/home/mj/dataset/nodule_data/data/nodule_process/process_zoom_validate/label_3d.csv'
+    results_filename              = sys.argv[2]  # '../results/validate1/res/51/FROC/submission_rpn.csv'#3D Faster R-CNN - Res18.csv' #top5.csv'#
+    seriesuids_filename           = sys.argv[3]  # '/home/mj/dataset/nodule_data/data/nodule_process/process_zoom_validate/val.txt'
+    outputDir                     = sys.argv[4]  # os.path.join('../results/validate1/res/51/FROC', 'rpn')
+    # execute only if run as a script
+    # annotations_filename
+    # results_filename
+    # valpath
+    # outputDir
+    noduleCADEvaluation(annotations_filename, results_filename, seriesuids_filename, outputDir)
     print("Finished!")
