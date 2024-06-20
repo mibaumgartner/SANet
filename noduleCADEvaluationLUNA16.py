@@ -9,8 +9,8 @@ import sklearn.metrics as skl_metrics
 import numpy as np
 
 from evaluationScript.NoduleFinding import NoduleFinding
-
 from evaluationScript.tools import csvTools
+
 # matplotlib.rc('xtick', labelsize=18)
 # matplotlib.rc('ytick', labelsize=18)
 font = {'family' : 'normal',
@@ -416,14 +416,14 @@ def evaluateCAD(seriesUIDs, results_filename, outputDir, allNodules, CADSystemNa
         plt.title('FROC performance - %s' % (CADSystemName))
         
         if bLogPlot:
-            plt.xscale('log', basex=2)
+            plt.xscale('log', base=2)
             ax.xaxis.set_major_formatter(FixedFormatter([0.125,0.25,0.5,1,2,4,8]))
         
         # set your ticks manually
         ax.xaxis.set_ticks([0.125,0.25,0.5,1,2,4,8])
         # ax.yaxis.set_ticks(np.arange(0.5, 1, 0.1))
         ax.yaxis.set_ticks(np.arange(0, 1.1, 0.1))
-        plt.grid(b=True, which='both')
+        plt.grid(visible=True, which='both')
         plt.tight_layout()
 
         plt.savefig(os.path.join(outputDir, "froc_%s.png" % CADSystemName), bbox_inches=0, dpi=300)
@@ -442,6 +442,16 @@ def evaluateCAD(seriesUIDs, results_filename, outputDir, allNodules, CADSystemNa
     
 def getNodule(annotation, header, state = ""):
     nodule = NoduleFinding()
+    nodule.id = annotation[header.index(seriesuid_label)]
+
+    if xmin_label in header:
+        nodule.xmin = annotation[header.index(xmin_label)]
+        nodule.xmax = annotation[header.index(xmax_label)]
+        nodule.ymin = annotation[header.index(ymin_label)]
+        nodule.ymax = annotation[header.index(ymax_label)]
+        nodule.zmin = annotation[header.index(zmin_label)]
+        nodule.zmax = annotation[header.index(zmax_label)]
+
     if coordX_label in header:
         nodule.coordX = annotation[header.index(coordX_label)]
         nodule.coordY = annotation[header.index(coordY_label)]
@@ -454,17 +464,20 @@ def getNodule(annotation, header, state = ""):
         print('Error: could not find coordinate labels in header')
         raise Exception
 
-    if xmin_label in header:
-        nodule.xmin = annotation[header.index(xmin_label)]
-        nodule.xmax = annotation[header.index(xmax_label)]
-        nodule.ymin = annotation[header.index(ymin_label)]
-        nodule.ymax = annotation[header.index(ymax_label)]
-        nodule.zmin = annotation[header.index(zmin_label)]
-        nodule.zmax = annotation[header.index(zmax_label)]
-    
     if diameter_mm_label in header:
         nodule.diameter_mm = annotation[header.index(diameter_mm_label)]
-    
+    elif xmin_label in header:
+        # nodule.dx = str(float(nodule.xmax) - float(nodule.xmin))
+        # nodule.dy = str(float(nodule.ymax) - float(nodule.ymin))
+        # nodule.dz = str(float(nodule.zmax) - float(nodule.zmin))
+        nodule.dx = str(float(nodule.xmax) - float(nodule.xmin) + 1)
+        nodule.dy = str(float(nodule.ymax) - float(nodule.ymin) + 1)
+        nodule.dz = str(float(nodule.zmax) - float(nodule.zmin) + 1)
+        nodule.diameter_mm = str(max(float(nodule.dx), float(nodule.dy), float(nodule.dz)))
+    else:
+        print('Error: could not find coordinate labels in header')
+        raise Exception
+
     if CADProbability_label in header:
         nodule.CADprobability = annotation[header.index(CADProbability_label)]
     
@@ -538,6 +551,13 @@ def noduleCADEvaluation(annotations_filename,results_filename,valpath,outputDir)
 
 
 if __name__ == '__main__':
+    import os
+    import sys
+    module_path = os.path.abspath(os.path.join('../..'))
+    print(module_path)
+    if module_path not in sys.path:
+        sys.path.append(module_path)
+    
     annotations_filename          = sys.argv[1]  # '/home/mj/dataset/nodule_data/data/nodule_process/process_zoom_validate/label_3d.csv'
     results_filename              = sys.argv[2]  # '../results/validate1/res/51/FROC/submission_rpn.csv'#3D Faster R-CNN - Res18.csv' #top5.csv'#
     seriesuids_filename           = sys.argv[3]  # '/home/mj/dataset/nodule_data/data/nodule_process/process_zoom_validate/val.txt'
